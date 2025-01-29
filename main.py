@@ -85,12 +85,6 @@ def start_game_loop(game_state):
 
 
 def check_game_state(game_state) -> str:
-    """
-    constant for dict of tries
-    counter for key from constant dict
-    if counter == L return Game state lost with format string
-    while counter up just return game state not finished
-    """
     if game_state["attempts_counter"] == LAST_HANGMAN_ATTEMPT:
         return GAME_STATE_LOST.format(word=game_state["random_word"].upper())
     elif are_all_chars_guessed(game_state["masked_word"]):
@@ -124,7 +118,6 @@ def check_player_guess(game_state, player_guess: str):
 
     
 def print_state(game_state):
-    # print(game_state["random_word"].upper())
     print(''.join(game_state["masked_word"]))
     if game_state["guessed_letters"]:
         print(f"That's your guesses so far: {", ".join(game_state["guessed_letters"])}")
