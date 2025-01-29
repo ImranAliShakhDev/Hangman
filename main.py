@@ -1,6 +1,6 @@
 import os
 import random
-from typing import Dict, List, Set, Union, Optional
+from typing import Dict, List, Set, Union
 
 ASSETS_FILE = "assets.txt"
 DICTIONARY_FILE = "dict.txt"
@@ -13,7 +13,7 @@ HANGMAN_STAGES = {
     6: "SIXTH_TRY"
 }
 LAST_HANGMAN_ATTEMPT = 6
-
+NEW_GAME_OPTION = 'n'
 UNKNOWN_STATE_CHAR = "X"
 START_COUNTER = 0
 GAME_STATE_WON = "You are the winner!"
@@ -61,28 +61,25 @@ def get_random_word(file_name: str) -> str:
     return random.choice(words)
 
 def start_game_round():
-    """
-    get game option
-    make set up for game_state
-    if new game start game loop
-    and after start_game_loop
-    """
-    game_option = input("[N]ew game or [E]xit\n").lower()
-    if game_option == 'n':
+    while True:
+        game_option = input("[N]ew game or [E]xit\n").lower()
+        if game_option != NEW_GAME_OPTION:
+            print("Have a nice day!")
+            break
+
         print("Let's start!")
         game_state["assets"] = load_ascii_assets(ASSETS_FILE)
-        game_state["random_word"] = get_random_word(DICTIONARY_FILE)
+        game_state["random_word"] = get_random_word(DICTIONARY_FILE).lower()
         game_state["masked_word"] = [UNKNOWN_STATE_CHAR for _ in range(len(game_state["random_word"]))]
         game_state["guessed_letters"] = set()
         game_state["attempts_counter"] = START_COUNTER
         start_game_loop(game_state)
-    else:
-        print("Have a nice day!")
 
 def start_game_loop(game_state):
     while(check_game_state(game_state) == GAME_STATE_NOT_FINISHED):
+        print_state(game_state)
         player_guess = make_player_guess(game_state["guessed_letters"])
-        print_state(game_state, player_guess)
+        check_player_guess(game_state, player_guess)
     else:
         print(check_game_state(game_state))
 
@@ -91,11 +88,11 @@ def check_game_state(game_state) -> str:
     """
     constant for dict of tries
     counter for key from constant dict
-    if counter == 6 return Game state lost with format string
+    if counter == L return Game state lost with format string
     while counter up just return game state not finished
     """
     if game_state["attempts_counter"] == LAST_HANGMAN_ATTEMPT:
-        return GAME_STATE_LOST.format(word=game_state["random_word"])
+        return GAME_STATE_LOST.format(word=game_state["random_word"].upper())
     elif are_all_chars_guessed(game_state["masked_word"]):
         return GAME_STATE_WON
     
@@ -115,22 +112,27 @@ def make_player_guess(guessed_letters: Set[str]) -> str:
         guessed_letters.add(player_guess)
         return player_guess
 
+def check_player_guess(game_state, player_guess: str):
+    if player_guess in game_state["random_word"]:
+        for idx, char in enumerate(game_state["random_word"]):
+            if char == player_guess:
+                game_state["masked_word"][idx] = player_guess.upper()
+    else:
+        game_state["attempts_counter"] += 1
+        attempt_countdown = LAST_HANGMAN_ATTEMPT - game_state["attempts_counter"]
+        print(f"\nOops, you gave a wrong letter. Attempts remaining: {attempt_countdown}")
+
     
-def print_state(game_state, player_guess: str):
-    """
-    I need get counter of attempts and print suitable hangman stage and how many remain
-    key_to_fetch = "SECOND_TRY"
-    fallback_value = "ASCII asset not found"
-    result: Optional[str] = assets.get(key_to_fetch, fallback_value)
-    print(result)
-    print(f"Random word: {random_word}")
-    """
-    # print(''.join(game_state["masked_word"]))
+def print_state(game_state):
     # print(game_state["random_word"].upper())
-    print(game_state["random_word"])
-    print(f"that's your guessing: {", ".join(game_state["guessed_letters"])}")
-    game_state["attempts_counter"] += 1
-    print(player_guess)
+    print(''.join(game_state["masked_word"]))
+    if game_state["guessed_letters"]:
+        print(f"That's your guesses so far: {", ".join(game_state["guessed_letters"])}")
+    if game_state["attempts_counter"]:
+        key_to_fetch = HANGMAN_STAGES.get(game_state["attempts_counter"])
+        attempts_state = game_state["assets"].get(key_to_fetch)
+        print(attempts_state)
+
 
 def are_all_chars_guessed(masked_word: List[str]):
     return UNKNOWN_STATE_CHAR not in masked_word
